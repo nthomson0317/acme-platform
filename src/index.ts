@@ -10,3 +10,4 @@ app.use('/api/v2/auth', authRouter);
 app.use('/api/v2/payments', paymentsRouter);
 
 export default app;
+// docs/api-reference-v2 — 2026-03-09T17:55:05Z
