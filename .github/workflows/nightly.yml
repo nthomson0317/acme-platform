@@ -1,0 +1,124 @@
+name: Nightly Build
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: |
+          echo "npm warn EBADPEER Could not resolve peer dependency"
+          echo "npm warn EBADPEER   stripe@\"^14.0.0\" requires Node peer >=18.x"
+          echo "npm warn deprecated stripe@14.0.0: Breaking changes in v14 — charges API removed"
+          echo ""
+          echo "added 312 packages in 4.2s"
+      - name: Run unit tests
+        run: |
+          echo "> acme-platform@1.4.3 test"
+          echo "> jest --coverage --testPathPattern=unit"
+          echo ""
+          echo "FAIL src/services/payment.test.ts"
+          echo "  ● PaymentService › charge › should create a charge"
+          echo ""
+          echo "    TypeError: stripe.charges is not a function"
+          echo "    The Stripe v14 SDK removed the charges API. Use PaymentIntents instead."
+          echo ""
+          echo "      21 |   it('should create a charge', async () => {"
+          echo "      22 |     const stripe = new Stripe(process.env.STRIPE_KEY);"
+          echo "    > 23 |     const charge = await stripe.charges.create({ amount: 2000, currency: 'usd' });"
+          echo "         |                                ^"
+          echo "      24 |     expect(charge.status).toBe('succeeded');"
+          echo "      25 |   });"
+          echo ""
+          echo "      at src/services/payment.test.ts:23:36"
+          echo ""
+          echo "FAIL src/routes/payments.test.ts"
+          echo "  ● POST /payments/charge › returns 200 on success"
+          echo ""
+          echo "    TypeError: Cannot read properties of undefined (reading 'create')"
+          echo ""
+          echo "      at processPayment (src/routes/payments.ts:8:28)"
+          echo ""
+          echo "Test Suites:  2 failed, 7 passed, 9 total"
+          echo "Tests:        3 failed, 211 passed, 214 total"
+          echo "Snapshots:    0 total"
+          echo "Time:         8.42s"
+          exit 1
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: |
+          echo "npm warn deprecated stripe@14.0.0: charges API removed in v14"
+          echo "added 312 packages in 3.9s"
+      - name: Start test services
+        run: |
+          echo "Starting mock services..."
+          echo "✓ Redis mock running on :6379"
+          echo "✓ Postgres test db running on :5432"
+      - name: Run integration tests
+        run: |
+          echo "> jest --testPathPattern=integration --runInBand"
+          echo ""
+          echo "FAIL src/integration/stripe-webhook.test.ts"
+          echo "  ● Stripe webhook handler › verifies webhook signature"
+          echo ""
+          echo "    Error: stripe.webhooks.constructEvent is not a function"
+          echo "    Webhook signature verification removed from top-level client in v14."
+          echo "    Use: import { Webhooks } from 'stripe'"
+          echo ""
+          echo "      44 |   const event = stripe.webhooks.constructEvent("
+          echo "      45 |     payload, sig, process.env.STRIPE_WEBHOOK_SECRET"
+          echo "    > 46 |   );"
+          echo "         |   ^"
+          echo ""
+          echo "FAIL src/integration/payment-flow.test.ts"
+          echo "  ● End-to-end payment flow › completes full charge cycle"
+          echo ""
+          echo "    TypeError: stripe.charges is not a function"
+          echo ""
+          echo "Test Suites:  2 failed, 3 passed, 5 total"
+          echo "Tests:        4 failed, 18 passed, 22 total"
+          echo "Time:         14.7s"
+          exit 1
+
+  build-check:
+    name: Build & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: |
+          echo "npm warn deprecated stripe@14.0.0: charges API removed in v14"
+          echo "added 312 packages in 4.1s"
+      - name: TypeScript type check
+        run: |
+          echo "> tsc --noEmit"
+          echo ""
+          echo "src/routes/payments.ts(8,28): error TS2339: Property 'charges' does not exist on type 'Stripe'."
+          echo "  The 'charges' property was removed in stripe v14. Use 'paymentIntents' instead."
+          echo ""
+          echo "src/services/payment.test.ts(23,36): error TS2339: Property 'charges' does not exist on type 'Stripe'."
+          echo ""
+          echo "src/routes/payments.ts(31,12): error TS2339: Property 'charges' does not exist on type 'Stripe'."
+          echo ""
+          echo "Found 3 errors in 2 files."
+          exit 1
