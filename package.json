@@ -1,6 +1,6 @@
 {
   "name": "acme-platform",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Acme Corp platform service",
   "scripts": {
     "build": "tsc",
@@ -10,7 +10,7 @@
   "dependencies": {
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
-    "stripe": "^13.3.0"
+    "stripe": "^14.0.0"
   },
   "devDependencies": {
     "typescript": "^5.2.0",
